@@ -5,6 +5,7 @@ import {fabric} from "fabric";
 fabric.Object.prototype.set({
     transparentCorners: false,
     hasBorders:false,
+    hasControls:false,
     // borderColor: '#9eba1b',
     cornerColor: '#333333',
     // selectionBackgroundColor: 'transparent',
@@ -13,15 +14,15 @@ fabric.Object.prototype.set({
     cornerStyle: 'circle',
 });
 
-let controls = {
-    tl: true, //top-left
-    mt: true, // middle-top
-    tr: true, //top-right
-    ml: true, //middle-left
-    mr: true, //middle-right
-    bl: true, // bottom-left
-    mb: true, //middle-bottom
-    br: true, //bottom-right
-    mtr: false, // rotate icon
-}
-fabric.Object.prototype.setControlsVisibility(controls)
+// let controls = {
+//     tl: true, //top-left
+//     mt: true, // middle-top
+//     tr: true, //top-right
+//     ml: true, //middle-left
+//     mr: true, //middle-right
+//     bl: true, // bottom-left
+//     mb: true, //middle-bottom
+//     br: true, //bottom-right
+//     mtr: false, // rotate icon
+// }
+// fabric.Object.prototype.setControlsVisibility(controls)

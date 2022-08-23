@@ -6,7 +6,7 @@ const ToolBaar =({markerMode = false,onToggleMarker})=>{
         <div className={`toolbaar-container`}>
             <div className="editor-tool-btn center-content" onClick={onToggleMarker}>
                 {/*<img src={'My_Portfolio/images/black/undo.png'} height={13} width={13}/>*/}
-                <span style={{color:markerMode?'green':'black'}}>{`MARKER : ${markerMode?"ON" : "OFF"}`}</span>
+                <span style={{color:markerMode?'blue':'black'}}>{`MARKER : ${markerMode?"ON" : "OFF"}`}</span>
             </div>
         </div>
     );

@@ -108,12 +108,11 @@ const FabEditor = () =>{
         });
         canvas.renderAll();
         fabric.Object.prototype.set({
-            hasControls:!isMarkerState,
             selection:!isMarkerState,
             selectable:!isMarkerState
         })
     }
-    
+
     const afterRender=()=>{
         draw_grid(25);
     }
@@ -127,7 +126,7 @@ const FabEditor = () =>{
         var currentCanvasHeight = canvas.getHeight();
         grid_context.strokeWidth  = 1;
         grid_context.strokeStyle = "rgb(206, 206, 217)";
-        
+
         // Drawing vertical lines
         var x;
         for (x = 0; x <= currentCanvasWidth; x += grid_size) {
@@ -161,7 +160,7 @@ const FabEditor = () =>{
     }
     const mouseWheel =(opt)=> {
         var delta = opt.e.deltaY;
-        var pointer = opt.pointer;
+        var pointer = canvas.getPointer(opt);
         var zoom = canvas.getZoom();
         zoom *= 0.999 ** delta;
         if (zoom > 20) zoom = 20;
@@ -212,7 +211,7 @@ const FabEditor = () =>{
         let obj = e.target;
         if (!obj) return;
         if (obj.type === "group" && obj.name === "blue_print"){
-            const {x,y} = e.pointer;
+            const {x,y} = canvas.getPointer(e)
             const {flag} = getPositionOnMark(x,y,obj);
             let cursor = (isMarkerState || markerMode) ? 'crosshair' : 'grab';
             if (flag) cursor = 'pointer'
@@ -228,13 +227,12 @@ const FabEditor = () =>{
         let obj = e.target;
         if (!obj) return;
         if (obj.name === "blue_print") {
-            const {x, y} = e.pointer;
-            const pointers = e.pointer;
+            const p = canvas.getPointer(e)
             if (isMarkerState || markerMode) {
-                lastSelectedObjProps = {pointers,actObj:obj};
+                lastSelectedObjProps = {pointers:p,actObj:obj};
                 setConfirmMessage(true)
             }else {
-                const {flag, objRef} = getPositionOnMark(x, y, obj);
+                const {flag, objRef} = getPositionOnMark(p.x, p.y, obj);
                 if (flag){
                     setEditPopUp(true);
                     setSelectedmark(objRef)
@@ -272,7 +270,7 @@ const FabEditor = () =>{
                 perPixelTargetFind:true
             });
             imgInstance.scaleToWidth(50);
-            imgInstance.set('top',top - imgInstance.getScaledHeight()/2);
+            imgInstance.set('top',top - imgInstance.getScaledHeight()/2 + 1);
             canvas.remove(bluePrint)
             let id1 = uuid.v4();
             let numGroup = new fabric.Group([...actObjs,imgInstance], {
@@ -302,6 +300,7 @@ const FabEditor = () =>{
     const objectScaled=(e)=>{}
     const objectRotating=(e)=>{}
     const objectMoving=(e)=>{}
+
     const addImage = (src) => {
         if (!canvas) return;
         const uuid = require("uuid");
@@ -319,7 +318,9 @@ const FabEditor = () =>{
                 originX: 'center',
                 originY: 'center',
                 name: "blue_print",
-                perPixelTargetFind:true
+                perPixelTargetFind:true,
+                stroke:"black",
+                strokeWidth:5
             });
             imgInstance.scaleToHeight(canvas.getWidth() * 0.4);
             canvas.renderAll();
@@ -368,7 +369,7 @@ const FabEditor = () =>{
         <div className="fabric-editor-container">
             <EditorHeader/>
             <div className="editor-main-wrapper">
-                <FabEditorLeft addBluePrint={addBluePrint}/>
+                <FabEditorLeft onToggleMarker={onToggleMarker} addBluePrint={addBluePrint}/>
                 <div className={"canvas-main-wrapper"}>
                     <ToolBaar onToggleMarker={onToggleMarker} markerMode={isMarkerState}/>
                     <div className={`fabric-editor-pro center-content-column`}>

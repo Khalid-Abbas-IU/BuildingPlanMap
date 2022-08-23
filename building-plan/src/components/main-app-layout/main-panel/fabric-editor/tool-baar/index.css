@@ -18,13 +18,17 @@
     /*width: 25px;*/
     /*height: 20px;*/
     font-size: 10px;
+    font-weight: 700;
     cursor: pointer;
     padding: 3px 5px
+}
+.editor-tool-btn span{
+    color: white;
 }
 .editor-tool-btn:hover{
     background: whitesmoke;
     color: #4fac9a;
-    border-color: #4fac9a;
+    border-color: blue;
     /*font-weight: 700;*/
 }
 .center-content{
