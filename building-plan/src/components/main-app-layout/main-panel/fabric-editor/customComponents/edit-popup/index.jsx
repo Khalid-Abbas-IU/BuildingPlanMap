@@ -1,7 +1,7 @@
 import React from 'react';
 import './index.css'
 import EditorButton from "../fab-button";
-import LabeledTextInput from "../labeled-text-input";
+import LabeledTextInput from "../lblTextInput";
 
 const EditPopup =({selectedmark,onCloseModal})=>{
     return (
