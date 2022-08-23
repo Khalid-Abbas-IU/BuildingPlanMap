@@ -8,23 +8,17 @@ import EditPopup from "../../customComponents/edit-popup";
 import ConfirmPopup from "../../customComponents/confirm-popup";
 const {EditorHeader,FabEditorLeft,FabEditorRight}=EditorPanels;
 let canvas, isGridCreated=false , markerMode = false,lastSelectedObjProps={};
-const FabEditor =()=>{
 
-    const [isMarkerState, setIsMarkerState] = useState(false)
-    const [editPopUp, setEditPopUp] = useState(false)
-    const [confirmMessage, setConfirmMessage] = useState(false)
-    const [confirmed, setConfirmed] = useState(false)
-    const [selectedmark, setSelectedmark] = useState("")
+const FabEditor = () =>{
+    const [isMarkerState, setIsMarkerState] = useState(false);
+    const [editPopUp, setEditPopUp] = useState(false);
+    const [confirmMessage, setConfirmMessage] = useState(false);
+    const [confirmed, setConfirmed] = useState(false);
+    const [selectedmark, setSelectedmark] = useState("");
 
     useEffect(() => {
-        document.addEventListener('wheel', function(e) {
-            e.ctrlKey && e.preventDefault();
-        }, {
-            passive: false,
-        });
-        window.addEventListener('resize', function(e) {
-            adjustCanvasDimensions();
-        }, true);
+        document.addEventListener('wheel', function(e) { e.ctrlKey && e.preventDefault(); }, {passive: false,});
+        window.addEventListener('resize', function(e) { adjustCanvasDimensions(); }, true);
         inItCanvas();
     },[]);
 
@@ -32,8 +26,7 @@ const FabEditor =()=>{
         enableMarkerMode(isMarkerState);
         markerMode = isMarkerState;
     },[isMarkerState]);
-
-
+    
     useEffect(() => {
         if (confirmed){
             if (lastSelectedObjProps && lastSelectedObjProps.hasOwnProperty('pointers')){
@@ -42,9 +35,7 @@ const FabEditor =()=>{
             }
         }
     },[confirmed]);
-
-
-
+    
     const inItCanvas =()=>{
         canvas = new fabric.Canvas('canvas',{
             width:700,
@@ -54,7 +45,6 @@ const FabEditor =()=>{
             moveCursor:'grabbing',
             selection: false,
         })
-        // const cursorUrl = 'https://ossrs.net/wiki/images/figma-cursor.png';
         canvas.defaultCursor = `grab`;
         canvas.hoverCursor = `grab`;
         canvas.moveCursor = `grab`;
@@ -94,12 +84,13 @@ const FabEditor =()=>{
             'object:scaled':objectScaled,
             'object:rotating':objectRotating,
             'mouse:up':mouseUp,
-            'mouse:over':mouseOver,
+            // 'mouse:over':mouseOver,
+            'mouse:move':mouseOver,
             'mouse:down':mouseDown,
             'after:render':afterRender,
             'key:down':onKeyDown,
             'mouse:wheel':mouseWheel
-        })
+        });
     }
 
     const enableMarkerMode =(isMarkerState)=>{
@@ -122,8 +113,7 @@ const FabEditor =()=>{
             selectable:!isMarkerState
         })
     }
-
-
+    
     const afterRender=()=>{
         draw_grid(25);
     }
@@ -137,9 +127,7 @@ const FabEditor =()=>{
         var currentCanvasHeight = canvas.getHeight();
         grid_context.strokeWidth  = 1;
         grid_context.strokeStyle = "rgb(206, 206, 217)";
-
-
-
+        
         // Drawing vertical lines
         var x;
         for (x = 0; x <= currentCanvasWidth; x += grid_size) {
@@ -157,7 +145,7 @@ const FabEditor =()=>{
         grid_context.stroke();
         isGridCreated = true;
     }
-    const adjustCanvasDimensions=()=>{
+    const adjustCanvasDimensions =()=>{
         let elHeight = 0, elWidth = 0;
         document.querySelectorAll('div').forEach((el)=>{
         if (el.classList.contains('fabric-editor-pro')){
@@ -185,33 +173,12 @@ const FabEditor =()=>{
     }
 
     const setCanvasZoom =(zoom,pointer)=> {
-        // const focusObject = canvas.getActiveObject();
-        // // const zoom = (value / 100) || 1;
-        //
-        // if (focusObject) {
-        //     canvas.setZoom(zoom);
-        //     canvas.absolutePan({
-        //         x: (-canvas.getCenter().left + (focusObject.getCenterPoint().x * zoom)),
-        //         y: (-canvas.getCenter().top + (focusObject.getCenterPoint().y * zoom)),
-        //     });
-        // } else {
-        //     canvas.zoomToPoint(
-        //         new fabric.Point(
-        //             pointer.x,
-        //             pointer.y
-        //         ),
-        //         zoom
-        //     );
-        // }
-
         canvas.zoomToPoint(
             new fabric.Point(
                 pointer.x,
                 pointer.y
-            ),
-            zoom
-        );
-
+            ), zoom );
+        canvas.renderAll();
     }
 
     const onToggleMarker=()=>{
@@ -219,14 +186,11 @@ const FabEditor =()=>{
         markerMode = !markerMode
     }
 
-    const onKeyDown = (e) => {
-    }
+    const onKeyDown = (e) => {}
 
     const getPositionOnMark =(x,y,obj)=>{
         if (!obj) return false;
         if (obj.type !== "group") return false;
-        // canvas.discardActiveObject();
-        // let actObjs = obj._objects;
         let marks = obj._objects.filter(o=>o.name === "pin_location");
         let result = {flag:false}
         for (const mark of marks) {
@@ -242,10 +206,9 @@ const FabEditor =()=>{
             }
         }
         return result;
-
     }
 
-    const mouseOver=(e)=>{
+    const mouseOver =(e)=>{
         let obj = e.target;
         if (!obj) return;
         if (obj.type === "group" && obj.name === "blue_print"){
@@ -259,7 +222,6 @@ const FabEditor =()=>{
                 moveCursor : cursor,
             });
             canvas.renderAll();
-
         }
     }
     const mouseUp=(e)=>{
@@ -281,7 +243,7 @@ const FabEditor =()=>{
             }
         }
     }
-    const addMakerPoint = async (pointers,bluePrint)=> {
+    const addMakerPoint = (pointers,bluePrint)=> {
         const uuid = require("uuid");
         let id = uuid.v4();
         const {x, y} = pointers,
@@ -292,11 +254,7 @@ const FabEditor =()=>{
             actObjs =bluePrint._objects;
             bluePrint._restoreObjectsState();
             canvas.remove(bluePrint);
-            // for(var i = 0; i < actObjs.length; i++) {
-            //     canvas.add(actObjs[i]);
-            // }
         }
-
         let left = x,
             top = y;
 
@@ -315,7 +273,6 @@ const FabEditor =()=>{
             });
             imgInstance.scaleToWidth(50);
             imgInstance.set('top',top - imgInstance.getScaledHeight()/2);
-            // canvas.add(imgInstance);
             canvas.remove(bluePrint)
             let id1 = uuid.v4();
             let numGroup = new fabric.Group([...actObjs,imgInstance], {
@@ -323,8 +280,6 @@ const FabEditor =()=>{
                 name: "blue_print",
                 originX: 'center',
                 originY: 'center',
-                // hasControls: false,
-                // evented: false,
             });
             canvas.add(numGroup);
             canvas.renderAll();
@@ -335,36 +290,18 @@ const FabEditor =()=>{
         };
         img.src = './assets/images/map-location.png';
     }
-    const mouseDown=(e)=>{
-        // if (!canvas) return;
-        // let obj = canvas.getActiveObject();
-        // if (obj) return;
-        // canvas.setActiveObject(canvas.getObjects()[0])
-    }
-    const objectAdded=(e)=>{
-    }
+    const mouseDown=(e)=>{}
+    const objectAdded=(e)=>{}
     const selectionCreated=()=>{
         let obj = canvas.getActiveObject();
         if (!obj) return;
     }
-    const selectionUpdated=(e)=>{
-
-    }
-    const modifiedObject=(e)=>{
-
-    }
-    const objectScaling=(e)=>{
-
-    }
-    const objectScaled=(e)=>{
-
-    }
-    const objectRotating=(e)=>{
-
-    }
-    const objectMoving=(e)=>{
-
-    }
+    const selectionUpdated=(e)=>{}
+    const modifiedObject=(e)=>{}
+    const objectScaling=(e)=>{}
+    const objectScaled=(e)=>{}
+    const objectRotating=(e)=>{}
+    const objectMoving=(e)=>{}
     const addImage = (src) => {
         if (!canvas) return;
         const uuid = require("uuid");
@@ -396,31 +333,7 @@ const FabEditor =()=>{
         if (isMarkerState && canvas.getObjects().length) return;
         addImage('./assets/images/blueprints/FLOOR-PLAN-BUILDINGS.jpg')
     }
-
-
-    const addText=(name)=>{
-        let text = new fabric.IText('Hello There',{
-            left:200,
-            top:400,
-            fontSize:20,
-            fill:'orange',
-            originX:'center',
-            originY:'center',
-            name
-        })
-        canvas.add(text);
-        canvas.renderAll();
-    }
-    const addObjectToCanvas =(objectName)=>{
-        switch (objectName){
-            case 'simple-text':
-                addText('simple-text');
-                break;
-            default:
-                addText('simple-text');
-                break;
-        }
-    }
+    
     const deleteActObject =()=>{
         const actObj = canvas.getActiveObject();
         if (!actObj) return;
@@ -455,7 +368,7 @@ const FabEditor =()=>{
         <div className="fabric-editor-container">
             <EditorHeader/>
             <div className="editor-main-wrapper">
-                <FabEditorLeft addText={addObjectToCanvas} addBluePrint={addBluePrint}/>
+                <FabEditorLeft addBluePrint={addBluePrint}/>
                 <div className={"canvas-main-wrapper"}>
                     <ToolBaar onToggleMarker={onToggleMarker} markerMode={isMarkerState}/>
                     <div className={`fabric-editor-pro center-content-column`}>
@@ -464,12 +377,8 @@ const FabEditor =()=>{
                 </div>
                 <FabEditorRight deleteActObject={deleteActObject}/>
             </div>
-            {
-                editPopUp && <EditPopup selectedmark={selectedmark} onCloseModal={()=>onCloseModal("edit")} onProceed={onProceed}/>
-            }
-            {
-                confirmMessage && <ConfirmPopup onCloseModal={()=>onCloseModal("confirm")} onProceed={()=>onProceed('confirm')}/>
-            }
+            { editPopUp && <EditPopup selectedmark={selectedmark} onCloseModal={()=>onCloseModal("edit")} onProceed={onProceed}/>}
+            { confirmMessage && <ConfirmPopup onCloseModal={()=>onCloseModal("confirm")} onProceed={()=>onProceed('confirm')}/> }
         </div>
     );
 }
