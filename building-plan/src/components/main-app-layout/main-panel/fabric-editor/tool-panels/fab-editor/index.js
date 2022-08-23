@@ -4,11 +4,17 @@ import '../../../../../fabric-overrids/index'
 import './index.css'
 import EditorPanels from '../../index'
 import ToolBaar from "../../tool-baar";
+import EditPopup from "../../customComponents/edit-popup";
+import ConfirmPopup from "../../customComponents/confirm-popup";
 const {EditorHeader,FabEditorLeft,FabEditorRight}=EditorPanels;
-let canvas, isGridCreated=false , markerMode = false;
+let canvas, isGridCreated=false , markerMode = false,lastSelectedObjProps={};
 const FabEditor =()=>{
 
     const [isMarkerState, setIsMarkerState] = useState(false)
+    const [editPopUp, setEditPopUp] = useState(false)
+    const [confirmMessage, setConfirmMessage] = useState(false)
+    const [confirmed, setConfirmed] = useState(false)
+    const [selectedmark, setSelectedmark] = useState("")
 
     useEffect(() => {
         document.addEventListener('wheel', function(e) {
@@ -26,6 +32,17 @@ const FabEditor =()=>{
         enableMarkerMode(isMarkerState);
         markerMode = isMarkerState;
     },[isMarkerState]);
+
+
+    useEffect(() => {
+        if (confirmed){
+            if (lastSelectedObjProps && lastSelectedObjProps.hasOwnProperty('pointers')){
+                const {pointers,actObj}=lastSelectedObjProps;
+                setIsMarkerState(!markerMode)
+                addMakerPoint(pointers, actObj);
+            }
+        }
+    },[confirmed]);
 
 
 
@@ -208,70 +225,78 @@ const FabEditor =()=>{
 
     const getPositionOnMark =(x,y,obj)=>{
         if (!obj) return false;
+        if (obj.type !== "group") return false;
+        // canvas.discardActiveObject();
+        // let actObjs = obj._objects;
         let marks = obj._objects.filter(o=>o.name === "pin_location");
+        let result = {flag:false}
         for (const mark of marks) {
             const scaledW = mark.getScaledWidth(),
                     scaledH = mark.getScaledHeight(),
                     halfW = scaledW/2,
                     halfH = scaledH/2,
-                    markLeft = mark.left,
-                    markTop = mark.top;
-            return x > markLeft + halfW && x < markLeft + halfW &&
-                y > markTop - halfH && y < markTop + halfH;
+                    markLeft = mark.left + obj.left,
+                    markTop = mark.top + obj.top
+            const flag = x > markLeft - halfW && x < markLeft + halfW && y > markTop - halfH && y < markTop + halfH;
+            if (flag){
+                result = {flag,objRef:mark.ref_id}
+            }
         }
-        // const scaledW = obj.getScaledWidth(),
-        //     scaledH = obj.getScaledHeight(),
-        //     halfW = scaledW/2,
-        //     halfH = scaledH/2,
-        //     bpLeft = obj.left,
-        //     bpTop = obj.top;
-        // return x > bpLeft - halfW && x < bpLeft + halfW &&
-        //     y < bpTop + halfH && y > bpTop - halfH;
+        return result;
 
     }
 
     const mouseOver=(e)=>{
-        // let obj = e.target;
-        // if (!obj) return;
-        // if (obj.type === "group" && obj.name === "blue_print"){
-        //     const {x,y} = e.pointer;
-        //     const isOnRange = getPositionOnMark(x,y,obj);
-        //     console.log(isOnRange);
-        //
-        // }
+        let obj = e.target;
+        if (!obj) return;
+        if (obj.type === "group" && obj.name === "blue_print"){
+            const {x,y} = e.pointer;
+            const {flag} = getPositionOnMark(x,y,obj);
+            let cursor = (isMarkerState || markerMode) ? 'crosshair' : 'grab';
+            if (flag) cursor = 'pointer'
+            canvas.set({
+                defaultCursor : cursor,
+                hoverCursor : cursor,
+                moveCursor : cursor,
+            });
+            canvas.renderAll();
+
+        }
     }
     const mouseUp=(e)=>{
         let obj = e.target;
         if (!obj) return;
-        if (obj.name !== "blue_print") return;
-        const pointers = e.pointer;
-        if (isMarkerState || markerMode){
-            setIsMarkerState(!markerMode)
-            addMakerPoint(pointers,obj);
+        if (obj.name === "blue_print") {
+            const {x, y} = e.pointer;
+            const pointers = e.pointer;
+            if (isMarkerState || markerMode) {
+                lastSelectedObjProps = {pointers,actObj:obj};
+                setConfirmMessage(true)
+            }else {
+                const {flag, objRef} = getPositionOnMark(x, y, obj);
+                if (flag){
+                    setEditPopUp(true);
+                    setSelectedmark(objRef)
+                }
+
+            }
         }
     }
-    const isOnBluePrint =(x,y,bp)=>{
-        x = x * canvas.getZoom()
-        y = y * canvas.getZoom()
-        if (!bp) return false;
-        return new Promise((resolve,reject)=>{
-            const scaledW = bp.getScaledWidth(),
-                scaledH = bp.getScaledHeight(),
-                halfW = scaledW/2,
-                halfH = scaledH/2,
-                bpLeft = bp.left,
-                bpTop = bp.top;
-            resolve( x > bpLeft - halfW && x < bpLeft + halfW &&
-                y < bpTop + halfH && y > bpTop - halfH);
-        })
-
-    }
-
     const addMakerPoint = async (pointers,bluePrint)=> {
         const uuid = require("uuid");
         let id = uuid.v4();
         const {x, y} = pointers;
-        // const isOnRange = await isOnBluePrint(x, y, bluePrint);
+        if (canvas.getActiveObject() === bluePrint) canvas.discardActiveObject();
+        let actObjs = [bluePrint];
+        if (bluePrint.type === 'group'){
+            actObjs =bluePrint._objects;
+            bluePrint._restoreObjectsState();
+            canvas.remove(bluePrint);
+            // for(var i = 0; i < actObjs.length; i++) {
+            //     canvas.add(actObjs[i]);
+            // }
+        }
+
         let img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function () {
@@ -290,7 +315,7 @@ const FabEditor =()=>{
             // canvas.add(imgInstance);
             canvas.remove(bluePrint)
             let id1 = uuid.v4();
-            let numGroup = new fabric.Group([bluePrint,imgInstance], {
+            let numGroup = new fabric.Group([...actObjs,imgInstance], {
                 ref_id: id1,
                 name: "blue_print",
                 originX: 'center',
@@ -300,8 +325,8 @@ const FabEditor =()=>{
             });
             canvas.add(numGroup);
             canvas.renderAll();
-
-
+            setConfirmed(false)
+            lastSelectedObjProps ={};
         };
         img.src = './assets/images/map-location.png';
     }
@@ -336,6 +361,7 @@ const FabEditor =()=>{
 
     }
     const addImage = (src) => {
+        if (!canvas) return;
         const uuid = require("uuid");
         let id = uuid.v4();
         let height = canvas.getHeight()/2,
@@ -396,6 +422,30 @@ const FabEditor =()=>{
         canvas.remove(actObj)
         canvas.renderAll();
     }
+    const onCloseModal =(type)=>{
+        switch (type){
+            case "edit":
+                setEditPopUp(false)
+                break;
+            case "confirm":
+                setConfirmMessage(false)
+                lastSelectedObjProps = {}
+                break;
+            default:break;
+        }
+    }
+    const onProceed =(type)=>{
+        switch (type){
+            case "edit":
+                setEditPopUp(false)
+                break;
+            case "confirm":
+                setConfirmMessage(false)
+                setConfirmed(true)
+                break;
+            default:break;
+        }
+    }
     return (
         <div className="fabric-editor-container">
             <EditorHeader/>
@@ -409,8 +459,13 @@ const FabEditor =()=>{
                 </div>
                 <FabEditorRight deleteActObject={deleteActObject}/>
             </div>
+            {
+                editPopUp && <EditPopup selectedmark={selectedmark} onCloseModal={()=>onCloseModal("edit")} onProceed={onProceed}/>
+            }
+            {
+                confirmMessage && <ConfirmPopup onCloseModal={()=>onCloseModal("confirm")} onProceed={()=>onProceed('confirm')}/>
+            }
         </div>
     );
 }
-
 export default FabEditor;
