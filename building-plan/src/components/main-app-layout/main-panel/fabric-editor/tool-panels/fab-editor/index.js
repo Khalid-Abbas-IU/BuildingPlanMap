@@ -38,7 +38,6 @@ const FabEditor =()=>{
         if (confirmed){
             if (lastSelectedObjProps && lastSelectedObjProps.hasOwnProperty('pointers')){
                 const {pointers,actObj}=lastSelectedObjProps;
-                setIsMarkerState(!markerMode)
                 addMakerPoint(pointers, actObj);
             }
         }
@@ -285,7 +284,8 @@ const FabEditor =()=>{
     const addMakerPoint = async (pointers,bluePrint)=> {
         const uuid = require("uuid");
         let id = uuid.v4();
-        const {x, y} = pointers;
+        const {x, y} = pointers,
+            zoom = canvas.getZoom();
         if (canvas.getActiveObject() === bluePrint) canvas.discardActiveObject();
         let actObjs = [bluePrint];
         if (bluePrint.type === 'group'){
@@ -297,21 +297,24 @@ const FabEditor =()=>{
             // }
         }
 
+        let left = x,
+            top = y;
+
         let img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function () {
             let imgInstance = new fabric.Image(img, {
                 crossOrigin : "Anonymous",
                 ref_id: id,
-                left: x,
-                top: y,
+                left,
+                top,
                 originX: 'center',
                 originY: 'center',
                 name: "pin_location",
                 perPixelTargetFind:true
             });
             imgInstance.scaleToWidth(50);
-            imgInstance.set('top',y - imgInstance.getScaledHeight()/2);
+            imgInstance.set('top',top - imgInstance.getScaledHeight()/2);
             // canvas.add(imgInstance);
             canvas.remove(bluePrint)
             let id1 = uuid.v4();
@@ -325,6 +328,8 @@ const FabEditor =()=>{
             });
             canvas.add(numGroup);
             canvas.renderAll();
+
+            setIsMarkerState(!markerMode)
             setConfirmed(false)
             lastSelectedObjProps ={};
         };
